@@ -19,12 +19,12 @@ use Symfony\Component\Messenger\Event\WorkerMessageReceivedEvent;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Scheduler\Messenger\ScheduledStamp;
-use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Zenstruck\Messenger\Monitor\History\Model\Result;
 use Zenstruck\Messenger\Monitor\History\Model\Results;
 use Zenstruck\Messenger\Monitor\Stamp\DisableMonitoringStamp;
 use Zenstruck\Messenger\Monitor\Stamp\MonitorStamp;
 use Zenstruck\Messenger\Monitor\Stamp\TagStamp;
+use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
 
 /**
  * @author Kevin Bond <kevinbond@gmail.com>
@@ -35,7 +35,7 @@ use Zenstruck\Messenger\Monitor\Stamp\TagStamp;
  */
 final class HistoryListener
 {
-    public function __construct(private Storage $storage, private ResultNormalizer $resultNormalizer, private NormalizerInterface $normalizer)
+    public function __construct(private Storage $storage, private ResultNormalizer $normalizer, private SerializerInterface $serializer)
     {
     }
 
@@ -80,7 +80,7 @@ final class HistoryListener
 
         $this->storage->save(
             $event->getEnvelope(),
-            (array)$this->normalizer->normalize($event->getEnvelope()->getMessage()),
+            $this->serializer->encode($event->getEnvelope()->withoutAll(MonitorStamp::class)),
             $this->createResults($event->getEnvelope())
         );
     }
@@ -101,7 +101,7 @@ final class HistoryListener
 
         $this->storage->save(
             $event->getEnvelope(),
-            (array)$this->normalizer->normalize($event->getEnvelope()),
+            $this->serializer->encode($event->getEnvelope()->withoutAll(MonitorStamp::class)),
             $this->createResults($event->getEnvelope(), $throwable instanceof HandlerFailedException ? $throwable : null),
             $throwable,
         );
@@ -144,7 +144,7 @@ final class HistoryListener
             /** @var HandledStamp $stamp */
             $results[] = [
                 'handler' => $stamp->getHandlerName(),
-                'data' => $this->resultNormalizer->normalize($stamp->getResult()),
+                'data' => $this->normalizer->normalize($stamp->getResult()),
             ];
         }
 
@@ -156,7 +156,7 @@ final class HistoryListener
             $results[] = [
                 'exception' => $nested::class,
                 'message' => $nested->getMessage(),
-                'data' => $this->resultNormalizer->normalize($nested),
+                'data' => $this->normalizer->normalize($nested),
             ];
         }
 

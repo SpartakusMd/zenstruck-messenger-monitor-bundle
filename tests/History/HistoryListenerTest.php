@@ -18,6 +18,7 @@ use Symfony\Component\Messenger\Event\WorkerMessageFailedEvent;
 use Symfony\Component\Messenger\Event\WorkerMessageHandledEvent;
 use Symfony\Component\Messenger\Event\WorkerMessageReceivedEvent;
 use Symfony\Component\Messenger\Stamp\HandledStamp;
+use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
 use Symfony\Component\Scheduler\Generator\MessageContext;
 use Symfony\Component\Scheduler\Messenger\ScheduledStamp;
 use Symfony\Component\Scheduler\Trigger\TriggerInterface;
@@ -39,7 +40,11 @@ final class HistoryListenerTest extends TestCase
      */
     public function adds_monitor_stamp(): void
     {
-        $listener = new HistoryListener($this->createMock(Storage::class), new ResultNormalizer(__DIR__));
+        $listener = new HistoryListener(
+            $this->createMock(Storage::class),
+            new ResultNormalizer(__DIR__),
+            $this->createMock(SerializerInterface::class)
+        );
         $envelope = new Envelope(new \stdClass());
         $event = new SendMessageToTransportsEvent($envelope, []);
 
@@ -55,7 +60,11 @@ final class HistoryListenerTest extends TestCase
      */
     public function skips_standard_messages_without_monitor_stamp(): void
     {
-        $listener = new HistoryListener($this->createMock(Storage::class), new ResultNormalizer(__DIR__));
+        $listener = new HistoryListener(
+            $this->createMock(Storage::class),
+            new ResultNormalizer(__DIR__),
+            $this->createMock(SerializerInterface::class)
+        );
         $envelope = new Envelope(new \stdClass());
         $event = new WorkerMessageReceivedEvent($envelope, 'foo');
 
@@ -71,7 +80,11 @@ final class HistoryListenerTest extends TestCase
      */
     public function marks_standard_message_as_received(): void
     {
-        $listener = new HistoryListener($this->createMock(Storage::class), new ResultNormalizer(__DIR__));
+        $listener = new HistoryListener(
+            $this->createMock(Storage::class),
+            new ResultNormalizer(__DIR__),
+            $this->createMock(SerializerInterface::class)
+        );
         $envelope = new Envelope(new \stdClass(), [new MonitorStamp()]);
         $event = new WorkerMessageReceivedEvent($envelope, 'foo');
 
@@ -89,7 +102,11 @@ final class HistoryListenerTest extends TestCase
      */
     public function marks_scheduled_message_as_received(): void
     {
-        $listener = new HistoryListener($this->createMock(Storage::class), new ResultNormalizer(__DIR__));
+        $listener = new HistoryListener(
+            $this->createMock(Storage::class),
+            new ResultNormalizer(__DIR__),
+            $this->createMock(SerializerInterface::class)
+        );
         $envelope = new Envelope(new \stdClass(), [new ScheduledStamp(new MessageContext(
             'default',
             'id',
@@ -120,10 +137,22 @@ final class HistoryListenerTest extends TestCase
         $storage = $this->createMock(Storage::class);
         $storage->expects($this->once())->method('save')->with(
             $this->isInstanceOf(Envelope::class),
+            ['some encoded envelope'],
             $this->isInstanceOf(Results::class),
         );
 
-        $listener = new HistoryListener($storage, new ResultNormalizer(__DIR__));
+        $serializer = $this->createMock(SerializerInterface::class);
+        $serializer->expects($this->once())
+            ->method('encode')
+            ->with($envelope->withoutAll(MonitorStamp::class))
+            ->willReturn(['some encoded envelope'])
+        ;
+
+        $listener = new HistoryListener(
+            $storage,
+            new ResultNormalizer(__DIR__),
+            $serializer
+        );
 
         $listener->handleSuccess($event = new WorkerMessageHandledEvent($envelope, 'foo'));
 
@@ -138,7 +167,11 @@ final class HistoryListenerTest extends TestCase
         $storage = $this->createMock(Storage::class);
         $storage->expects($this->never())->method('save');
 
-        $listener = new HistoryListener($storage, new ResultNormalizer(__DIR__));
+        $listener = new HistoryListener(
+            $storage,
+            new ResultNormalizer(__DIR__),
+            $this->createMock(SerializerInterface::class)
+        );
 
         $listener->handleSuccess(new WorkerMessageHandledEvent(new Envelope(new \stdClass()), 'foo'));
         $listener->handleSuccess(new WorkerMessageHandledEvent(new Envelope(new \stdClass(), [new MonitorStamp()]), 'foo'));
@@ -154,11 +187,23 @@ final class HistoryListenerTest extends TestCase
         $storage = $this->createMock(Storage::class);
         $storage->expects($this->once())->method('save')->with(
             $this->isInstanceOf(Envelope::class),
+            ['some encoded envelope'],
             $this->isInstanceOf(Results::class),
             $exception,
         );
 
-        $listener = new HistoryListener($storage, new ResultNormalizer(__DIR__));
+        $serializer = $this->createMock(SerializerInterface::class);
+        $serializer->expects($this->once())
+            ->method('encode')
+            ->with($envelope->withoutAll(MonitorStamp::class))
+            ->willReturn(['some encoded envelope'])
+        ;
+
+        $listener = new HistoryListener(
+            $storage,
+            new ResultNormalizer(__DIR__),
+            $serializer
+        );
 
         $listener->handleFailure($event = new WorkerMessageFailedEvent($envelope, 'foo', $exception));
 
@@ -173,7 +218,11 @@ final class HistoryListenerTest extends TestCase
         $storage = $this->createMock(Storage::class);
         $storage->expects($this->never())->method('save');
 
-        $listener = new HistoryListener($storage, new ResultNormalizer(__DIR__));
+        $listener = new HistoryListener(
+            $storage,
+            new ResultNormalizer(__DIR__),
+            $this->createMock(SerializerInterface::class)
+        );
 
         $listener->handleFailure(new WorkerMessageFailedEvent(new Envelope(new \stdClass()), 'foo', new \RuntimeException()));
         $listener->handleFailure(new WorkerMessageFailedEvent(new Envelope(new \stdClass(), [new MonitorStamp()]), 'foo', new \RuntimeException()));
@@ -184,7 +233,11 @@ final class HistoryListenerTest extends TestCase
      */
     public function can_disable_monitoring_with_envelope_stamp(): void
     {
-        $listener = new HistoryListener($this->createMock(Storage::class), new ResultNormalizer(__DIR__));
+        $listener = new HistoryListener(
+            $this->createMock(Storage::class),
+            new ResultNormalizer(__DIR__),
+            $this->createMock(SerializerInterface::class)
+        );
         $envelope = new Envelope(new \stdClass(), [new MonitorStamp(), new DisableMonitoringStamp()]);
         $event = new WorkerMessageReceivedEvent($envelope, 'foo');
 
@@ -198,7 +251,11 @@ final class HistoryListenerTest extends TestCase
      */
     public function can_disable_monitoring_message_attribute(): void
     {
-        $listener = new HistoryListener($this->createMock(Storage::class), new ResultNormalizer(__DIR__));
+        $listener = new HistoryListener(
+            $this->createMock(Storage::class),
+            new ResultNormalizer(__DIR__),
+            $this->createMock(SerializerInterface::class)
+        );
         $envelope = new Envelope(new DisabledMonitoringMessage(), [new MonitorStamp()]);
         $event = new WorkerMessageReceivedEvent($envelope, 'foo');
 
@@ -212,7 +269,11 @@ final class HistoryListenerTest extends TestCase
      */
     public function can_disable_monitoring_message_attribute_without_handler(): void
     {
-        $listener = new HistoryListener($this->createMock(Storage::class), new ResultNormalizer(__DIR__));
+        $listener = new HistoryListener(
+            $this->createMock(Storage::class),
+            new ResultNormalizer(__DIR__),
+            $this->createMock(SerializerInterface::class)
+        );
         $envelope = new Envelope(new DisabledMonitoringWithoutHandlerMessage(), [new MonitorStamp()]);
         $event = new WorkerMessageReceivedEvent($envelope, 'foo');
 
@@ -226,7 +287,11 @@ final class HistoryListenerTest extends TestCase
      */
     public function handle_disable_monitoring_message_attribute_with_handler(): void
     {
-        $listener = new HistoryListener($this->createMock(Storage::class), new ResultNormalizer(__DIR__));
+        $listener = new HistoryListener(
+            $this->createMock(Storage::class),
+            new ResultNormalizer(__DIR__),
+            $this->createMock(SerializerInterface::class)
+        );
         $envelope = new Envelope(
             new EnabledMonitoringWithHandlerMessage(),
             [

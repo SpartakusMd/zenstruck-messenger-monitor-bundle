@@ -33,7 +33,7 @@ return static function (ContainerConfigurator $container): void {
             ->args([
                 service('zenstruck_messenger_monitor.history.storage'),
                 service('.zenstruck_messenger_monitor.history.result_normalizer'),
-                service('serializer'),
+                service('messenger.default_serializer'),
             ])
             ->tag('kernel.event_listener', ['method' => 'addMonitorStamp', 'event' => SendMessageToTransportsEvent::class])
             ->tag('kernel.event_listener', ['method' => 'receiveMessage', 'event' => WorkerMessageReceivedEvent::class])
