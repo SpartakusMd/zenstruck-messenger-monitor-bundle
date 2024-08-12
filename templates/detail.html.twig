@@ -124,6 +124,8 @@
                                     <pre class="mb-0" style="white-space: pre; max-height: 340px; overflow: auto;">{{ value|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
                                 {% elseif value matches "\/\n/" %}
                                     <pre class="mb-0" style="white-space: pre; max-height: 340px; overflow: auto;">{{ value }}</pre>
+                                {% elseif value.value is defined %}
+                                    <code>{{ value.value }}</code>
                                 {% else %}
                                     <code>{{ value }}</code>
                                 {% endif %}
