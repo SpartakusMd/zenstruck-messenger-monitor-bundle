@@ -30,6 +30,8 @@ abstract class ProcessedMessage
 
     /** @var class-string */
     private string $type;
+
+    /** @param array<string, string> $input */
     private array $input;
     private ?string $description;
     private \DateTimeImmutable $dispatchedAt;
@@ -48,6 +50,7 @@ abstract class ProcessedMessage
     /** @var Structure[]|Results|null */
     private array|Results|null $results;
 
+    /** @param array<string, string> $input */
     public function __construct(Envelope $envelope, array $input, Results $results, ?\Throwable $exception = null)
     {
         $monitorStamp = $envelope->last(MonitorStamp::class) ?? throw new \LogicException('Required stamp not available');
@@ -95,6 +98,7 @@ abstract class ProcessedMessage
         return new Type($this->type);
     }
 
+    /** @return  array<string, string> $input */
     final public function input(): array
     {
         return $this->input;
