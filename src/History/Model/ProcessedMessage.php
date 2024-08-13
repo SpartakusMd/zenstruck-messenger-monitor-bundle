@@ -31,7 +31,7 @@ abstract class ProcessedMessage
     /** @var class-string */
     private string $type;
 
-    /** @param array<string, string> $input */
+    /** @var array<string, string> $input */
     private array $input;
     private ?string $description;
     private \DateTimeImmutable $dispatchedAt;
