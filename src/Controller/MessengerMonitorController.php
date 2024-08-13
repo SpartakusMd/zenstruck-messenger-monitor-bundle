@@ -19,10 +19,12 @@ use Symfony\Component\HttpKernel\Exception\HttpException;
 use Symfony\Component\Messenger\Message\RedispatchMessage;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\TransportNamesStamp;
+use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Scheduler\Generator\MessageContext;
 use Symfony\Component\Scheduler\Trigger\CronExpressionTrigger;
 use Symfony\Component\Scheduler\Trigger\TriggerInterface;
+use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Zenstruck\Messenger\Monitor\History\Period;
 use Zenstruck\Messenger\Monitor\History\Specification;
 use Zenstruck\Messenger\Monitor\Schedules;
@@ -86,7 +88,7 @@ abstract class MessengerMonitorController extends AbstractController
     }
 
     #[Route('/history/{id}', name: 'zenstruck_messenger_monitor_detail')]
-    public function detail(string $id, ViewHelper $helper): Response
+    public function detail(string $id, ViewHelper $helper, SerializerInterface $serializer, NormalizerInterface $normalizer): Response
     {
         if (!$helper->storage) {
             throw new \LogicException('Storage must be configured to use the dashboard.');
@@ -96,9 +98,14 @@ abstract class MessengerMonitorController extends AbstractController
             throw $this->createNotFoundException('Message not found.');
         }
 
+        $inputMessage = $serializer->decode($message->input())->getMessage();
+        $inputMessage = $normalizer->normalize($inputMessage);
+
+
         return $this->render('@ZenstruckMessengerMonitor/detail.html.twig', [
             'helper' => $helper,
             'message' => $message,
+            'inputMessage' => $inputMessage,
             'other_attempts' => $helper->storage->filter(Specification::create(['run_id' => $message->runId()])),
         ]);
     }
