@@ -99,7 +99,7 @@ abstract class MessengerMonitorController extends AbstractController
         }
 
         $inputMessage = [];
-        if (array_key_exists('body', $message->input())) {
+        if ($message->input() && array_key_exists('body', $message->input())) {
             $inputMessage = $serializer->decode($message->input())->getMessage();
             $inputMessage = $normalizer->normalize($inputMessage);
         }
