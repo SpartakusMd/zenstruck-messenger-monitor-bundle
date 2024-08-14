@@ -98,9 +98,11 @@ abstract class MessengerMonitorController extends AbstractController
             throw $this->createNotFoundException('Message not found.');
         }
 
-        $inputMessage = $serializer->decode($message->input())->getMessage();
-        $inputMessage = $normalizer->normalize($inputMessage);
-
+        $inputMessage = [];
+        if (array_key_exists('body', $message->input())) {
+            $inputMessage = $serializer->decode($message->input())->getMessage();
+            $inputMessage = $normalizer->normalize($inputMessage);
+        }
 
         return $this->render('@ZenstruckMessengerMonitor/detail.html.twig', [
             'helper' => $helper,
