@@ -24,6 +24,7 @@ use Zenstruck\Messenger\Monitor\History\Model\Results;
 use Zenstruck\Messenger\Monitor\Stamp\DisableMonitoringStamp;
 use Zenstruck\Messenger\Monitor\Stamp\MonitorStamp;
 use Zenstruck\Messenger\Monitor\Stamp\TagStamp;
+use Symfony\Component\Messenger\Transport\Serialization\SerializerInterface;
 
 /**
  * @author Kevin Bond <kevinbond@gmail.com>
@@ -34,7 +35,7 @@ use Zenstruck\Messenger\Monitor\Stamp\TagStamp;
  */
 final class HistoryListener
 {
-    public function __construct(private Storage $storage, private ResultNormalizer $normalizer)
+    public function __construct(private Storage $storage, private ResultNormalizer $normalizer, private SerializerInterface $serializer)
     {
     }
 
@@ -77,7 +78,11 @@ final class HistoryListener
 
         $event->addStamps($stamp->markFinished());
 
-        $this->storage->save($event->getEnvelope(), $this->createResults($event->getEnvelope()));
+        $this->storage->save(
+            $event->getEnvelope(),
+            $this->serializer->encode($event->getEnvelope()->withoutAll(MonitorStamp::class)),
+            $this->createResults($event->getEnvelope())
+        );
     }
 
     public function handleFailure(WorkerMessageFailedEvent $event): void
@@ -96,6 +101,7 @@ final class HistoryListener
 
         $this->storage->save(
             $event->getEnvelope(),
+            $this->serializer->encode($event->getEnvelope()->withoutAll(MonitorStamp::class)),
             $this->createResults($event->getEnvelope(), $throwable instanceof HandlerFailedException ? $throwable : null),
             $throwable,
         );
