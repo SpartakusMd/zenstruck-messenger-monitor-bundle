@@ -202,6 +202,9 @@ bin/console messenger:monitor:schedule:purge --remove-orphans
 ## User Interface
 
 > [!NOTE]
+> `symfony/form` (`composer require symfony/form`) is required for the UI.
+
+> [!NOTE]
 > [Storage](#storage) must be configured for this feature.
 
 Create a controller that extends `Zenstruck\Messenger\Monitor\Controller\MessengerMonitorController`
@@ -239,10 +242,6 @@ You can now access the dashboard at: `/admin/messenger` or with the route `zenst
 > [!NOTE]
 > Install `lorisleiva/cron-translator` (`composer require lorisleiva/cron-translator`) to display
 > friendlier CRON values for your scheduled tasks.
-
-> [!NOTE]
-> Install `symfony/form` (`composer require symfony/form`) for the CSRF support when doing Ajax calls.
-> Necessary if when using symfony/scheduler is used.
 
 ## Advanced Usage
 
