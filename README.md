@@ -240,6 +240,10 @@ You can now access the dashboard at: `/admin/messenger` or with the route `zenst
 > Install `lorisleiva/cron-translator` (`composer require lorisleiva/cron-translator`) to display
 > friendlier CRON values for your scheduled tasks.
 
+> [!NOTE]
+> Install `symfony/form` (`composer require symfony/form`) for the CSRF support when doing Ajax calls.
+> Necessary if when using symfony/scheduler is used.
+
 ## Advanced Usage
 
 ### `Workers` Service
