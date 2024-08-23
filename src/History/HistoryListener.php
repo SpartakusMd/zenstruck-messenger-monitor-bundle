@@ -21,6 +21,7 @@ use Symfony\Component\Messenger\Stamp\HandledStamp;
 use Symfony\Component\Scheduler\Messenger\ScheduledStamp;
 use Zenstruck\Messenger\Monitor\History\Model\Result;
 use Zenstruck\Messenger\Monitor\History\Model\Results;
+use Zenstruck\Messenger\Monitor\Stamp\DisableInputStoreStamp;
 use Zenstruck\Messenger\Monitor\Stamp\DisableMonitoringStamp;
 use Zenstruck\Messenger\Monitor\Stamp\MonitorStamp;
 use Zenstruck\Messenger\Monitor\Stamp\TagStamp;
@@ -78,9 +79,14 @@ final class HistoryListener
 
         $event->addStamps($stamp->markFinished());
 
+        $input = [];
+        if (!$this->isInputMonitoringDisabled($event->getEnvelope())) {
+            $input = $this->serializer->encode($event->getEnvelope()->withoutAll(MonitorStamp::class));
+        }
+
         $this->storage->save(
             $event->getEnvelope(),
-            $this->serializer->encode($event->getEnvelope()->withoutAll(MonitorStamp::class)),
+            $input,
             $this->createResults($event->getEnvelope())
         );
     }
@@ -99,9 +105,14 @@ final class HistoryListener
 
         $event->addStamps($stamp->markFinished());
 
+        $input = [];
+        if (!$this->isInputMonitoringDisabled($event->getEnvelope())) {
+            $input = $this->serializer->encode($event->getEnvelope()->withoutAll(MonitorStamp::class));
+        }
+
         $this->storage->save(
             $event->getEnvelope(),
-            $this->serializer->encode($event->getEnvelope()->withoutAll(MonitorStamp::class)),
+            $input,
             $this->createResults($event->getEnvelope(), $throwable instanceof HandlerFailedException ? $throwable : null),
             $throwable,
         );
@@ -134,6 +145,23 @@ final class HistoryListener
         }
 
         return false;
+    }
+
+    private function isInputMonitoringDisabled(Envelope $envelope): bool
+    {
+        if ($envelope->last(DisableInputStoreStamp::class)) {
+            return true;
+        }
+
+        $reflection = new \ReflectionClass($envelope->getMessage());
+        $attributes = [];
+
+        while (false !== $reflection && [] === $attributes) {
+            $attributes = $reflection->getAttributes(DisableInputStoreStamp::class);
+            $reflection = $reflection->getParentClass();
+        }
+
+        return [] !== $attributes;
     }
 
     private function createResults(Envelope $envelope, ?HandlerFailedException $exception = null): Results
