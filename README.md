@@ -202,7 +202,7 @@ bin/console messenger:monitor:schedule:purge --remove-orphans
 ## User Interface
 
 > [!NOTE]
-> `symfony/form` (`composer require symfony/form`) is required for the UI.
+> `symfony/form` and `symfony/security-csrf` (`composer require symfony/form symfony/security-csrf`) are required for the UI.
 
 > [!NOTE]
 > [Storage](#storage) must be configured for this feature.
