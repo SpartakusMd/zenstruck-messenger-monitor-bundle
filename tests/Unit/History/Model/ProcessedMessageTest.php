@@ -161,7 +161,7 @@ final class ProcessedMessageTest extends TestCase
         $stamp = $stamp->markFinished();
 
         $envelope = new Envelope(new \stdClass(), [$stamp]);
-        $message = new class($envelope, new Results([])) extends ProcessedMessage {
+        $message = new class($envelope, [], new Results([])) extends ProcessedMessage {
             public function id(): string|int|\Stringable|null
             {
                 return null;
